@@ -13,7 +13,7 @@ import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Loader2, Check } from "lucide-react";
-import { Address } from "@prisma/client";
+import { Address } from "@/app/generated/client";
 import { useHasMounted } from "@/hooks/use-has-mounted";
 import { Skeleton } from "@/app/components/ui/skeleton";
 

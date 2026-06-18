@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/app/generated/client";
 
 // Define the exact type of the product object we expect based on our getProducts include
 type ProductWithRelations = Prisma.ProductGetPayload<{

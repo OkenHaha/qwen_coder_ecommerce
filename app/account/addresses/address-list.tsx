@@ -7,7 +7,7 @@ import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/app/components/ui/card";
 import { Loader2, Plus, Trash2, Home, Building, ShieldCheck } from "lucide-react";
-import { Address } from "@prisma/client";
+import { Address } from "@/app/generated/client";
 
 export function AddressList({ initialAddresses }: { initialAddresses: Address[] }) {
   const [isPending, startTransition] = useTransition();

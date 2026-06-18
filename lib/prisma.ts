@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@/app/generated/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 
 // Prevent multiple instances in dev (Next.js hot reload)

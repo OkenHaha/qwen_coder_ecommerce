@@ -1,7 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
-import { Prisma } from "@prisma/client"
+import { Prisma } from "@/app/generated/client"
 import { requireAuth, requireAdmin, getCurrentUser } from "@/lib/auth-guard"
 import { createRazorpayOrder, verifyPaymentSignature } from "@/lib/razorpay"
 import { sendOrderConfirmation } from "@/lib/resend"

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/app/components/ui/button";
 import { useCartStore } from "@/store/cart-store";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/app/generated/client";
 import { toast } from "sonner"; // or your preferred toaster
 
 type ProductWithRelations = Prisma.ProductGetPayload<{
