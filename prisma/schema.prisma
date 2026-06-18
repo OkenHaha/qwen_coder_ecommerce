@@ -1,0 +1,325 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ══════════════════════════════════════════
+// AUTH — NextAuth.js required models
+// ══════════════════════════════════════════
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ══════════════════════════════════════════
+// USER — Your main user model
+// ══════════════════════════════════════════
+
+model User {
+  id            String        @id @default(cuid())
+  name          String?
+  email         String        @unique
+  emailVerified DateTime?
+  password      String?       // hashed with bcrypt
+  image         String?
+  phone         String?
+  role          Role          @default(CUSTOMER)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  addresses     Address[]
+  orders        Order[]
+  cartItems     CartItem[]
+  reviews       Review[]
+  wishlists     Wishlist[]
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+// ══════════════════════════════════════════
+// CATEGORY
+// ══════════════════════════════════════════
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  imageUrl    String?
+  parentId    String?
+  sortOrder   Int        @default(0)
+  createdAt   DateTime   @default(now())
+
+  parent      Category?   @relation("Subcategories", fields: [parentId], references: [id])
+  children    Category[]  @relation("Subcategories")
+  products    Product[]
+}
+
+// ══════════════════════════════════════════
+// PRODUCT
+// ══════════════════════════════════════════
+
+model Product {
+  id          String         @id @default(cuid())
+  name        String
+  slug        String         @unique
+  description String?
+  basePrice   Decimal        @db.Decimal(10, 2)
+  salePrice   Decimal?       @db.Decimal(10, 2)
+  brand       String?
+  status      ProductStatus  @default(DRAFT)
+  avgRating   Decimal        @default(0) @db.Decimal(2, 1)
+  metadata    Json?
+  categoryId  String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  category    Category?      @relation(fields: [categoryId], references: [id])
+  variants    ProductVariant[]
+  images      ProductImage[]
+  orderItems  OrderItem[]
+  reviews     Review[]
+  wishlists   Wishlist[]
+  cartItems   CartItem[]
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+// ══════════════════════════════════════════
+// PRODUCT VARIANT
+// ══════════════════════════════════════════
+
+model ProductVariant {
+  id            String   @id @default(cuid())
+  productId     String
+  sku           String   @unique
+  size          String?
+  color         String?
+  priceOverride Decimal? @db.Decimal(10, 2)
+  stock         Int      @default(0)
+  imageUrl      String?
+
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems    OrderItem[]
+  cartItems     CartItem[]
+}
+
+// ══════════════════════════════════════════
+// PRODUCT IMAGE
+// ══════════════════════════════════════════
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  url       String
+  altText   String?
+  sortOrder Int      @default(0)
+  isPrimary Boolean  @default(false)
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// ══════════════════════════════════════════
+// ADDRESS
+// ══════════════════════════════════════════
+
+model Address {
+  id         String  @id @default(cuid())
+  userId     String
+  label      String? // "Home", "Office"
+  line1      String
+  line2      String?
+  city       String
+  state      String
+  zipCode    String
+  country    String  @default("IN")
+  phone      String?
+  isDefault  Boolean @default(false)
+
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ══════════════════════════════════════════
+// ORDER
+// ══════════════════════════════════════════
+
+model Order {
+  id                String      @id @default(cuid())
+  orderNumber       String      @unique
+  userId            String?     // nullable for guest checkout
+  status            OrderStatus @default(PENDING)
+  subtotal          Decimal     @db.Decimal(10, 2)
+  discount          Decimal     @default(0) @db.Decimal(10, 2)
+  shippingCost      Decimal     @default(0) @db.Decimal(10, 2)
+  tax               Decimal     @default(0) @db.Decimal(10, 2)
+  total             Decimal     @db.Decimal(10, 2)
+  shippingAddress   Json
+  billingAddress    Json?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  trackingNumber    String?
+  trackingUrl       String?
+  notes             String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  user              User?       @relation(fields: [userId], references: [id])
+  items             OrderItem[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+// ══════════════════════════════════════════
+// ORDER ITEM
+// ══════════════════════════════════════════
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  productId   String
+  variantId   String?
+  productName String
+  variantInfo Json?    // { size: "M", color: "Red" }
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  total       Decimal  @db.Decimal(10, 2)
+
+  order       Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product       @relation(fields: [productId], references: [id])
+  variant     ProductVariant? @relation(fields: [variantId], references: [id])
+}
+
+// ══════════════════════════════════════════
+// COUPON
+// ══════════════════════════════════════════
+
+model Coupon {
+  id         String     @id @default(cuid())
+  code       String     @unique
+  type       CouponType
+  value      Decimal    @db.Decimal(10, 2)
+  minOrder   Decimal    @default(0) @db.Decimal(10, 2)
+  usageLimit Int?
+  usedCount  Int        @default(0)
+  startsAt   DateTime?
+  expiresAt  DateTime?
+  isActive   Boolean    @default(true)
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+  FREE_SHIPPING
+}
+
+// ══════════════════════════════════════════
+// REVIEW
+// ══════════════════════════════════════════
+
+model Review {
+  id               String   @id @default(cuid())
+  productId        String
+  userId           String
+  rating           Int
+  title            String?
+  body             String?
+  verifiedPurchase Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user             User     @relation(fields: [userId], references: [id])
+
+  @@unique([productId, userId])
+}
+
+// ══════════════════════════════════════════
+// WISHLIST
+// ══════════════════════════════════════════
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+// ══════════════════════════════════════════
+// CART ITEM (server-side for auth users)
+// ══════════════════════════════════════════
+
+model CartItem {
+  id        String          @id @default(cuid())
+  userId    String
+  productId String
+  variantId String?
+  quantity  Int             @default(1)
+  createdAt DateTime        @default(now())
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product         @relation(fields: [productId], references: [id])
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@unique([userId, variantId])
+}
