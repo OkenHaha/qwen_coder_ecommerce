@@ -11,7 +11,16 @@ export async function getShippingRates(toAddress: {
   weight: number // in grams
 }) {
   const shipment = await shippo.shipments.create({
-    addressFrom: process.env.SHIPPO_SENDER_ADDRESS!,
+    addressFrom: {
+      name: "Shawn Ippotle",
+      company: "My Store",
+      street1: "215 Clayton St.",
+      city: "San Francisco",
+      state: "CA",
+      zip: "94117",
+      country: "US",
+      email: process.env.NEXT_PUBLIC_STORE_EMAIL || "shippotle@shippo.com",
+    },
     addressTo: {
       name: toAddress.name,
       street1: toAddress.street1,
